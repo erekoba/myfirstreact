@@ -1,0 +1,16 @@
+.App {
+  font-family: sans-serif;
+  text-align: center;
+}
+.list{
+  margin-top: 0;
+  display:flex;
+  flex-wrap: wrap;
+}
+.listChild{
+  width:30%;
+  color:white;
+}
+.listChild a{
+  color:white;
+}
