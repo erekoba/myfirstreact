@@ -1,9 +1,13 @@
-import React from "react";
+import React, { useState, useEffect } from 'react';
 import SwipeableViews from "react-swipeable-views";
 import Booklist from './Booklist';
 import { makeStyles } from "@material-ui/core/styles";
 import axios from 'axios';
-import { BrowserRouter, Route, Link } from 'react-router-dom';
+import { withRouter } from 'react-router-dom';
+import Characard from './Card';
+import Skeleton from '@material-ui/lab/Skeleton';
+import PropTypes from 'prop-types'
+import firebase from '../firebase';
 
 import Tabs from "@material-ui/core/Tabs";
 import Tab from "@material-ui/core/Tab";
@@ -18,26 +22,28 @@ const getDataFromAPI = async keyword => {
 const useStyles = makeStyles(() => {
     const baseStyle = {
         color: "white",
-        height: "900px"
+        // height: "164px",
+        padding: "8px"
     };
     const activeBaseStyle = {
         color: "white",
-        borderTopLeftRadius: "5px",
-        borderTopRightRadius: "5px"
+        height: "12px",
+        width: "12px",
+        borderRadius: "24px",
     };
 
     return {
         slide0: {
             ...baseStyle,
-            backgroundColor: "skyblue"
+            backgroundColor: "#eFeFeF",
         },
         slide1: {
             ...baseStyle,
-            backgroundColor: "orange"
+            backgroundColor: "#eFeFeF",
         },
         slide2: {
             ...baseStyle,
-            backgroundColor: "indianred"
+            backgroundColor: "#efefef",
         },
         image: {
             width: "auto",
@@ -45,45 +51,65 @@ const useStyles = makeStyles(() => {
         },
         active0: {
             ...activeBaseStyle,
-            backgroundColor: "lightseagreen"
+            backgroundColor: "#fff"
         },
         active1: {
             ...activeBaseStyle,
-            backgroundColor: "yellowgreen"
+            backgroundColor: "#B9B9B9"
         },
-        active2: {
-            ...activeBaseStyle,
-            backgroundColor: "pink"
+        card: {
+            backgroundColor: "#fff",
+            height: "180px",
+            borderRadius: "4px",
+            border: "1px solid #c3c3c3"
         }
     };
 });
 
-const Swipe = () => {
+const Swipe = props => {
+
+    const [todoList, setTodoList] = useState(null);
+    // firestoreから全データを取得してstateに格納する関数
+    const getTodosFromFirestore = async () => {
+        const itemListArray = await firebase.firestore().collection('oshies')
+            .where('userID', '==', props.userid)
+            .get();
+        const todoArray = itemListArray.docs.map(x => {
+            return {
+                id: x.id,
+                data: x.data(),
+            }
+        })
+        setTodoList(todoArray);
+        return todoArray;
+    }
+    console.log(todoList)
+    // useEffectを利用してFirestoreからデータの一覧を取得．
+    useEffect(() => {
+        const result = getTodosFromFirestore();
+    }, [props])
     const [swipeableActions, setSwipeableActions] = React.useState();
     const [tabIndex, setTabIndex] = React.useState(0);
     const classes = useStyles();
-    const items = ["React", "Vue", "angular"];
-    const itemNames = ["React", "Vue", "angular"];
-
     const handleChange = index => {
         setTabIndex(index);
+        props.history.push(`/oshi/${index}`)
     };
 
     return (
         <React.Fragment>
-            <Tabs
+            {/* <Tabs
                 value={tabIndex}
                 onChange={(e, value) => handleChange(value)}
-                variant="fullWidth"
-                indicatorColor="primary"
+                style={{}}
+                indicatorColor="none"
             >
                 {itemNames.map((itemName, i) => (
                     <Tab
-                        className={tabIndex === i && classes[`active${i}`]}
-                        label={itemName}
+                        className={tabIndex === i ? classes[`active0`] : classes[`active1`]}
                     />
                 ))}
-            </Tabs>
+            </Tabs> */}
             <SwipeableViews
                 enableMouseEvents
                 action={actions => setSwipeableActions(actions)}
@@ -92,18 +118,27 @@ const Swipe = () => {
                 index={tabIndex}
                 onChangeIndex={index => handleChange(index)}
             >
-                {items.map((item, index) => (
+                {todoList?.map((value, index) => (
                     <div className={classes[`slide${index}`]}>
-                        {tabIndex === index
+                        <Characard
+                            oshiid={value.id}
+                            oshiname={value.data.oshi}
+                            oshiurl={value.data.oshiurl}
+                            oshiwork={value.data.work}
+                            index={index}
+                        />
+
+
+                        {/* {tabIndex === index
                             && <Booklist
                                 language={item}
                                 getData={keyword => getDataFromAPI(keyword)}  // getDataという名前で関数を渡す
                             />
-                        }
+                        } */}
                     </div>
                 ))}
             </SwipeableViews>
-        </React.Fragment>
+        </React.Fragment >
     );
 };
-export default Swipe;
+export default withRouter(Swipe);

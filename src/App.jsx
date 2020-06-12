@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Booklist from './components/Booklist';
 import axios from 'axios';
 import { BrowserRouter, Route, Link } from 'react-router-dom';
@@ -6,67 +6,120 @@ import { Button } from '@material-ui/core';
 import Grid from '@material-ui/core/Grid';
 import Paper from '@material-ui/core/Paper';
 import AlarmIcon from '@material-ui/icons/Alarm';
-import Modal from '@material-ui/core/Modal';
+
 import Typography from '@material-ui/core/Typography';
 import 'typeface-roboto';
 import Swipe from './components/swipe';
 import "./styles.css";
+import History from './components/History';
+import AppBar from '@material-ui/core/AppBar';
+import Toolbar from '@material-ui/core/Toolbar';
+import IconButton from '@material-ui/core/IconButton';
+import MenuIcon from '@material-ui/icons/Menu';
+import { makeStyles } from '@material-ui/core/styles';
+import firebase from './firebase';
 
-// 入力値に`books`を追加して出力するシンプルな関数を定義
-const getDataFromAPI = async keyword => {
-  const requesturl = 'https://www.googleapis.com/books/v1/volumes?q=intitle:'
-  const result = await axios.get(`${requesturl}${keyword}`)
-  return result;
-}
 
-const App = () => {
+
+const useStyles = makeStyles((theme) => ({
+  root: {
+    flexGrow: 1,
+  },
+  menuButton: {
+    marginRight: theme.spacing(2),
+  },
+  title: {
+    flexGrow: 1,
+  },
+
+}));
+const App = props => {
+  const [Input, setInput] = useState(true);
+  console.log(Input)
+  const [todoList, setTodoList] = useState(null);
+  // firestoreから全データを取得してstateに格納する関数
+  const getUserFromFirestore = async () => {
+    const itemListArray = await firebase.firestore().collection('oshies')
+      .where('userID', '==', 'niFkenfMWIVSpO5YmpQT')
+      .get();
+    const todoArray = itemListArray.docs.map(x => {
+      return {
+        id: x.id,
+      }
+    })
+
+    setTodoList(todoArray);
+    return todoArray;
+
+  }
+
+  // useEffectを利用してFirestoreからデータの一覧を取得．
+  useEffect(() => {
+    const result = getUserFromFirestore();
+  }, [props])
+
+
   const languages = ['React', 'Vue', 'Angular'];
+  const classes = useStyles();
+  const userid = 'niFkenfMWIVSpO5YmpQT';
+  const oshilists = [0, 1, 2]
 
   return (
-
     <BrowserRouter>
+      <div className={classes.root}>
+        <AppBar position="fixed" style={{ backgroundColor: "#FF8500" }}>
+          <Toolbar>
+            <IconButton edge="start" className={classes.menuButton} color="inherit" aria-label="menu">
+              <MenuIcon />
+            </IconButton>
+            <Typography variant="h6" className={classes.title}>
+              News
+          </Typography>
+            <Button color="inherit">Login</Button>
+          </Toolbar>
+        </AppBar>
+      </div>
+      <div style={{ height: "64px" }}></div>
       <div>
-        <Swipe />
+        <Swipe
+          userid={userid} />
       </div>
 
-      <ul>
-        <li><Link to='/'><Typography variant="subtitle1">
-          React
-              </Typography></Link></li>
-        <li><Link to='/vue'><Typography variant="subtitle1">
-          Vue
-              </Typography></Link></li>
-        <li><Link to='/angular'><Typography variant="subtitle1">
-          angular
-              </Typography></Link></li>
-      </ul>
-
-      <Route
-        exact
-        path='/'
-        render={
-          props =>
-            <Booklist
-              language={languages[0]}
-              getData={keyword => getDataFromAPI(keyword)}  // getDataという名前で関数を渡す
-            />}
-      />
-      <Route
-        path='/vue'
-        render={props =>
-          <Booklist
-            language={languages[1]}
-            getData={keyword => getDataFromAPI(keyword)}  // getDataという名前で関数を渡す
-          />}
-      />
-      <Route
-        path='/angular'
-        render={props =>
-          <Booklist
-            language={languages[2]}
-            getData={keyword => getDataFromAPI(keyword)}  // getDataという名前で関数を渡す
-          />}
-      />
+      {todoList === null
+        ? <Route
+          exact
+          path={`/`}
+          render={
+            props =>
+              <History
+                userid={userid}
+              />}
+        />
+        : <Route
+          exact
+          path={`/oshi`}
+          render={
+            props =>
+              <History
+                userid={userid}
+                oshiid={todoList[0].id}
+              />
+          }
+        />
+      }
+      {todoList?.map((oshi, index) => (
+        <Route
+          exact
+          path={`/oshi/${index}`}
+          render={
+            props =>
+              <History
+                userid={userid}
+                oshiid={oshi.id}
+                index={index}
+              />}
+        />
+      ))}
 
     </BrowserRouter >
   );

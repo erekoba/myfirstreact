@@ -5,7 +5,7 @@
 .list{
   margin-top: 0;
   display:flex;
-  flex-wrap: wrap;
+  height:100%
 }
 .listChild{
   width:30%;
